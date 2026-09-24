@@ -17,8 +17,6 @@ dependencies:
   share_plus: ^10.1.4
 
 dev_dependencies:
-  flutter_launcher_icons: ^0.14.3
-
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.2
@@ -27,12 +25,3 @@ flutter:
   uses-material-design: true
 
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  web:
-    generate: true
-    image_path: assets/ali_goat_farm_icon.svg
-    background_color: "#12372A"
-  image_path: assets/ali_goat_farm_icon.svg
-  adaptive_icon_background: "#12372A"
