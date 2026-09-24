@@ -1,11 +1,1 @@
-# Build fix
-This version fixes:
-- runtime Theme.of(...) used inside a const Flutter Border
-- accidental `pw.Tableflutter.Border.all` replacement in the PDF table code
-
-Run:
-```bash
-flutter clean
-flutter pub get
-flutter run -d chrome
-```
+Android build fix: migrated the project to Flutter Android V2 embedding, added MainActivity, Gradle configuration, launcher fallback icon, and a GitHub Actions release APK workflow. The SVG icon generator was removed so the build does not depend on the SVG icon.

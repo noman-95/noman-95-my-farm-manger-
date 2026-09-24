@@ -1,0 +1,11 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android { namespace 'com.example.farm_manager'; compileSdk 35
+    defaultConfig { applicationId 'com.example.farm_manager'; minSdk 23; targetSdk 35; versionCode flutter.versionCode; versionName flutter.versionName }
+}
+
+flutter { source '../..' }
