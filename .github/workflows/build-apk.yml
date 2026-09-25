@@ -45,20 +45,47 @@ jobs:
           CI: true
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false"
         run: |
-          set -o pipefail
-          flutter build apk --release --verbose 2>&1 | tee build.log
+          set -euxo pipefail
 
-      - name: Check APK
+          flutter pub get
+
+          # Prepare Flutter Android dependencies/files
+          flutter precache --android
+
+          cd android
+
+          ./gradlew :app:assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            --info
+
+          cd ..
+
+          echo "===== GENERATED APK FILES ====="
+          find . -type f -name "*.apk" -print
+
+          APK="$(find android/app/build/outputs -type f -name "*.apk" | head -n 1)"
+
+          if [ -z "$APK" ]; then
+            echo "No APK was generated"
+            exit 1
+          fi
+
+          mkdir -p build/app/outputs/flutter-apk
+
+          cp "$APK" build/app/outputs/flutter-apk/app-release.apk
+
+          echo "===== FINAL APK ====="
+          ls -lh build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Check Android build outputs
         if: always()
         run: |
           echo "===== APK FILES ====="
           find . -type f -name "*.apk" -print || true
 
-      - name: Show build log on failure
-        if: failure()
-        run: |
-          echo "===== FLUTTER BUILD LOG ====="
-          cat build.log || true
+          echo "===== ANDROID BUILD OUTPUTS ====="
+          find android/app/build -maxdepth 6 -type f -print 2>/dev/null || true
 
       - name: Upload APK
         if: success()
