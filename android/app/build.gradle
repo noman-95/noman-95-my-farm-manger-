@@ -1,22 +1,15 @@
-plugins {
-    id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
 
-android {
-    namespace = "com.example.farm_manager"
-    compileSdk = 36
-
-    defaultConfig {
-        applicationId = "com.example.farm_manager"
-        minSdk = 23
-        targetSdk = 35
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // Flutter engine/embedding artifacts
+        maven {
+            url = uri("https://storage.googleapis.com/download.flutter.io")
+        }
     }
 }
 
-flutter {
-    source = "../.."
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }
