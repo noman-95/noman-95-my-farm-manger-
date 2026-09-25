@@ -18,6 +18,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -28,6 +29,11 @@ jobs:
 
       - name: Flutter doctor
         run: flutter doctor -v
+
+      - name: Verify Java version
+        run: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
 
       - name: Get packages
         run: flutter pub get
@@ -40,14 +46,28 @@ jobs:
         run: ./gradlew --stop || true
 
       - name: Build release APK
-        run: flutter build apk --release
+        env:
+          CI: true
+        run: |
+          flutter build apk --release --verbose 2>&1 | tee build.log
 
       - name: Check APK
+        if: always()
         run: |
-          echo "Checking generated APK..."
-          find build -name "*.apk" -type f -print
+          echo "===== APK FILES ====="
+          find . -type f -name "*.apk" -print || true
+
+          echo "===== BUILD DIRECTORIES ====="
+          find build -maxdepth 5 -type d -print 2>/dev/null || true
+
+      - name: Show build log on failure
+        if: failure()
+        run: |
+          echo "===== FLUTTER BUILD LOG ====="
+          cat build.log || true
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ali-goat-farm-release-apk
