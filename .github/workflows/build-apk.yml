@@ -30,15 +30,10 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      - name: Verify Java version
-        run: |
-          java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-
       - name: Get packages
         run: flutter pub get
 
-      - name: Clean Flutter build
+      - name: Clean Flutter
         run: flutter clean
 
       - name: Stop Gradle daemons
@@ -48,7 +43,9 @@ jobs:
       - name: Build release APK
         env:
           CI: true
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.vfs.watch=false -Dorg.gradle.parallel=false"
         run: |
+          set -o pipefail
           flutter build apk --release --verbose 2>&1 | tee build.log
 
       - name: Check APK
@@ -56,9 +53,6 @@ jobs:
         run: |
           echo "===== APK FILES ====="
           find . -type f -name "*.apk" -print || true
-
-          echo "===== BUILD DIRECTORIES ====="
-          find build -maxdepth 5 -type d -print 2>/dev/null || true
 
       - name: Show build log on failure
         if: failure()
