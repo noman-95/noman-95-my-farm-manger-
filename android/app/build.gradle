@@ -1,15 +1,12 @@
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
+android {
+    namespace 'com.example.farm_manager'
+    compileSdk 36
 
-        // Flutter engine/embedding artifacts
-        maven {
-            url = uri("https://storage.googleapis.com/download.flutter.io")
-        }
+    defaultConfig {
+        applicationId 'com.example.farm_manager'
+        minSdk 23
+        targetSdk 35
+        versionCode flutter.versionCode
+        versionName flutter.versionName
     }
-}
-
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
 }
