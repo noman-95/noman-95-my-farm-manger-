@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -15,7 +16,11 @@ const green = Color(0xFF167A4A);
 const darkGreen = Color(0xFF0B4D31);
 const bg = Color(0xFFF4F7F5);
 
-void main() => runApp(const FarmManagerApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await MobileAds.instance.initialize();
+  runApp(const FarmManagerApp());
+}
 
 String fmtDate(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
@@ -633,9 +638,16 @@ class _FarmShellState extends State<FarmShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: index,
-        children: pages,
+      body: Column(
+        children: [
+          Expanded(
+            child: IndexedStack(
+              index: index,
+              children: pages,
+            ),
+          ),
+          if (index == 0) const _FarmBannerAd(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         height: 72,
@@ -947,6 +959,83 @@ class MetricCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FarmBannerAd extends StatefulWidget {
+  const _FarmBannerAd({super.key});
+
+  @override
+  State<_FarmBannerAd> createState() => _FarmBannerAdState();
+}
+
+class _FarmBannerAdState extends State<_FarmBannerAd> {
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+
+  static const String _bannerAdUnitId =
+      'ca-app-pub-1274157419758662/1485506789';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  void _loadBanner() {
+    final banner = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          setState(() {
+            _bannerAd = ad as BannerAd;
+            _isLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (!mounted) return;
+          setState(() {
+            _bannerAd = null;
+            _isLoaded = false;
+          });
+          debugPrint('AdMob banner failed to load: $error');
+        },
+      ),
+    );
+
+    banner.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final banner = _bannerAd;
+    if (!_isLoaded || banner == null) {
+      return const SizedBox.shrink();
+    }
+
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        width: banner.size.width.toDouble(),
+        height: banner.size.height.toDouble(),
+        child: Center(
+          child: AdWidget(ad: banner),
         ),
       ),
     );
