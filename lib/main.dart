@@ -977,7 +977,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   bool _isLoaded = false;
 
   static const String _bannerAdUnitId =
-      'ca-app-pub-1274157419758662/1485506789';
+      'ca-app-pub-3940256099942544/6300978111';
 
   @override
   void initState() {
@@ -1008,7 +1008,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
             _bannerAd = null;
             _isLoaded = false;
           });
-          debugPrint('AdMob banner failed to load: $error');
+          debugPrint('AdMob TEST banner failed to load: $error');
         },
       ),
     );
@@ -1026,7 +1026,15 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   Widget build(BuildContext context) {
     final banner = _bannerAd;
     if (!_isLoaded || banner == null) {
-      return const SizedBox.shrink();
+      return const SizedBox(
+        height: 32,
+        child: Center(
+          child: Text(
+            'Ad test: waiting / not loaded',
+            style: TextStyle(fontSize: 10, color: Colors.grey),
+          ),
+        ),
+      );
     }
 
     return SafeArea(
