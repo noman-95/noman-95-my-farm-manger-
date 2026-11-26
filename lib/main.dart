@@ -977,7 +977,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   bool _isLoaded = false;
 
   static const String _bannerAdUnitId =
-      'ca-app-pub-3940256099942544/6300978111';
+      'ca-app-pub-5700287934760796/3704831232';
 
   @override
   void initState() {
@@ -1008,7 +1008,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
             _bannerAd = null;
             _isLoaded = false;
           });
-          debugPrint('AdMob TEST banner failed to load: $error');
+          debugPrint('AdMob banner failed to load: $error');
         },
       ),
     );
@@ -1030,7 +1030,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
         height: 32,
         child: Center(
           child: Text(
-            'Ad test: waiting / not loaded',
+            'Ad loading...',
             style: TextStyle(fontSize: 10, color: Colors.grey),
           ),
         ),
