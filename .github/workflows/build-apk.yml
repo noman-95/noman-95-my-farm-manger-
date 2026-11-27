@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,11 +34,13 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing ANDROID_KEYSTORE_BASE64 secret" && exit 1)
-          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing ANDROID_KEYSTORE_PASSWORD secret" && exit 1)
-          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing ANDROID_KEY_PASSWORD secret" && exit 1)
-          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing ANDROID_KEY_ALIAS secret" && exit 1)
+          test -n "$ANDROID_KEYSTORE_BASE64" || exit 1
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || exit 1
+          test -n "$ANDROID_KEY_PASSWORD" || exit 1
+          test -n "$ANDROID_KEY_ALIAS" || exit 1
+
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+
           cat > android/key.properties <<EOF
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$ANDROID_KEY_PASSWORD
@@ -48,12 +51,30 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build release APK
-        run: flutter build apk --release --verbose
+      - name: Build release APK with Gradle
+        run: |
+          cd android
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease
 
-      - name: Show APK files
-        if: always()
-        run: find . -type f -name "*.apk" -print
+      - name: Find and prepare APK
+        run: |
+          echo "Searching for release APK..."
+
+          APK_PATH=$(find android/app/build/outputs -type f -name "*.apk" | grep "/release/" | head -n 1)
+
+          if [ -z "$APK_PATH" ]; then
+            echo "ERROR: Release APK was not generated."
+            find android/app/build/outputs -type f -print
+            exit 1
+          fi
+
+          echo "Found APK: $APK_PATH"
+
+          mkdir -p build/app/outputs/flutter-apk
+
+          cp "$APK_PATH" build/app/outputs/flutter-apk/app-release.apk
+
+          ls -lh build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
