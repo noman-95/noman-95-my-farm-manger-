@@ -184,7 +184,7 @@ Widget _reportTotalItem(String title, double value) {
 }
 
 
-// ===== Ali Goat Farm — Modern UI v6 =====
+// ===== My Farm Manager — Modern UI v6 =====
 const Color agfDeep = Color(0xFF12372A);
 const Color agfGreen = Color(0xFF1F7A4D);
 const Color agfMint = Color(0xFFE8F5EC);
@@ -258,7 +258,7 @@ Widget agfModernHero(BuildContext context) {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'ALI GOAT FARM',
+                    'MY FARM MANAGER',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -428,7 +428,7 @@ class _FarmShellState extends State<FarmShell> {
   int index = 0;
   bool loading = true;
 
-  String farmName = 'Ali Goat Farm';
+  String farmName = 'My Farm Manager';
 
   List<Animal> animals = [];
   List<FinanceRecord> finance = [];
@@ -460,7 +460,7 @@ class _FarmShellState extends State<FarmShell> {
     final rawMilk = p.getStringList('milk_v1') ?? [];
 
     setState(() {
-      farmName = 'Ali Goat Farm';
+      farmName = p.getString('farm_name_v5') ?? 'My Farm Manager';
 
       animals = rawAnimals
           .map((x) => Animal.fromJson(jsonDecode(x)))
@@ -626,8 +626,13 @@ class _FarmShellState extends State<FarmShell> {
         finance: finance,
         farmName: farmName,
         health: health,
-        onFarmNameChanged: (_) {
-          setState(() => farmName = 'Ali Goat Farm');
+        onFarmNameChanged: (newName) {
+          final updatedName = newName.trim();
+          setState(() {
+            farmName = updatedName.isEmpty
+                ? 'My Farm Manager'
+                : updatedName;
+          });
           _save();
         },
         dark: widget.dark,
@@ -3518,7 +3523,7 @@ Future<void> exportExcel(
 
   final header = <String>[
     farmName.isEmpty
-        ? 'My Farm'
+        ? 'My Farm Manager'
         : farmName,
     title,
     'Period: ${fmtDate(range.start)} to ${fmtDate(range.end)}',
@@ -3589,7 +3594,7 @@ Future<void> exportPdf(
       build: (_) => [
         pw.Text(
           farmName.isEmpty
-              ? 'My Farm'
+              ? 'My Farm Manager'
               : farmName,
           style: pw.TextStyle(
             fontSize: 18,
