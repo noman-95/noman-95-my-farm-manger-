@@ -1,13 +1,11 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
     id 'dev.flutter.flutter-gradle-plugin'
 }
 
-// Release signing credentials are kept outside this file in android/key.properties.
-// Never commit key.properties or the upload keystore to source control.
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
+
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
@@ -29,13 +27,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
     signingConfigs {
         release {
-            // Values are supplied by android/key.properties on the build machine.
             storeFile keystoreProperties.getProperty('storeFile') ? file(keystoreProperties.getProperty('storeFile')) : null
             storePassword keystoreProperties.getProperty('storePassword', '')
             keyAlias keystoreProperties.getProperty('keyAlias', '')
@@ -45,9 +38,14 @@ android {
 
     buildTypes {
         release {
-            // Do not use the automatically generated debug certificate for release builds.
             signingConfig signingConfigs.release
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
