@@ -4,6 +4,14 @@ plugins {
     id 'dev.flutter.flutter-gradle-plugin'
 }
 
+// Release signing credentials are kept outside this file in android/key.properties.
+// Never commit key.properties or the upload keystore to source control.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.example.farm_manager'
     compileSdk 36
@@ -25,9 +33,20 @@ android {
         jvmTarget = '17'
     }
 
+    signingConfigs {
+        release {
+            // Values are supplied by android/key.properties on the build machine.
+            storeFile keystoreProperties.getProperty('storeFile') ? file(keystoreProperties.getProperty('storeFile')) : null
+            storePassword keystoreProperties.getProperty('storePassword', '')
+            keyAlias keystoreProperties.getProperty('keyAlias', '')
+            keyPassword keystoreProperties.getProperty('keyPassword', '')
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            // Do not use the automatically generated debug certificate for release builds.
+            signingConfig signingConfigs.release
         }
     }
 }
