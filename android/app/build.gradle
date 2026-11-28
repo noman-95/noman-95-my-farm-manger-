@@ -1,4 +1,3 @@
-
 plugins {
     id 'com.android.application'
     id 'dev.flutter.flutter-gradle-plugin'
@@ -40,9 +39,11 @@ android {
     }
 
     buildTypes {
-    release {
-        signingConfig signingConfigs.debug
-    }
+        release {
+            // Use the private release keystore restored by the GitHub Actions workflow.
+            // Never sign an Appstore release with the Android debug certificate.
+            signingConfig signingConfigs.release
+        }
     }
 
     lint {
