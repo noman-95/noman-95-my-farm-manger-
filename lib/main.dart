@@ -2001,17 +2001,36 @@ class InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final value = b.trim().isEmpty ? '—' : b.trim();
+
     return Card(
-      child: ListTile(
-        title: Text(a),
-        trailing: Flexible(
-          child: Text(
-            b.isEmpty ? '—' : b,
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Text(
+                a,
+                softWrap: true,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 6,
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                softWrap: true,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+          ],
         ),
       ),
     );
