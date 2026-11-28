@@ -16,23 +16,11 @@ const green = Color(0xFF167A4A);
 const darkGreen = Color(0xFF0B4D31);
 const bg = Color(0xFFF4F7F5);
 
-// Ads initialization is deliberately kept separate from app startup.
-// If the ad SDK is unavailable or slow, the farm app still opens normally.
-Future<void>? _adsInitialization;
-
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Ads are initialized later by the optional banner widget. App startup
+  // never waits for the advertising SDK or network access.
   runApp(const FarmManagerApp());
-  _adsInitialization = _initializeAdsSafely();
-}
-
-Future<void> _initializeAdsSafely() async {
-  try {
-    await MobileAds.instance.initialize();
-    debugPrint('Google Mobile Ads initialized.');
-  } catch (error) {
-    debugPrint('Google Mobile Ads initialization failed: $error');
-  }
 }
 
 T? _safeDecode<T>(String raw, T Function(Map<String, dynamic>) parser) {
@@ -689,7 +677,14 @@ class _FarmShellState extends State<FarmShell> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SafeArea(
+            top: false,
+            child: TestBannerAd(),
+          ),
+          NavigationBar(
         height: 72,
         selectedIndex: index,
         onDestinationSelected: (v) {
@@ -722,6 +717,8 @@ class _FarmShellState extends State<FarmShell> {
             icon: Icon(Icons.menu_rounded),
             selectedIcon: Icon(Icons.menu_open_rounded),
             label: 'More',
+          ),
+        ],
           ),
         ],
       ),
@@ -1005,8 +1002,8 @@ class MetricCard extends StatelessWidget {
   }
 }
 
-// Google-provided test banner. Replace the test unit ID only when switching
-// to the app's real AdMob configuration after testing is complete.
+// Optional Google test banner. The app works normally if initialization or
+// ad loading fails; the banner only occupies space after a successful load.
 class TestBannerAd extends StatefulWidget {
   const TestBannerAd({super.key});
 
@@ -1018,63 +1015,55 @@ class _TestBannerAdState extends State<TestBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
 
-  // Google's official Android banner test ad unit ID.
   static const String _testBannerAdUnitId =
       'ca-app-pub-3940256099942544/9214589741';
 
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
+    _initializeAndLoadBanner();
   }
 
-  Future<void> _loadBannerAd() async {
-    // Never let banner loading block the app or run before SDK initialization.
+  Future<void> _initializeAndLoadBanner() async {
     try {
-      await _adsInitialization;
-    } catch (error) {
-      debugPrint('Skipping banner because ads are unavailable: $error');
-      return;
-    }
-    if (!mounted) return;
+      await MobileAds.instance.initialize();
+      if (!mounted) return;
 
-    final ad = BannerAd(
-      adUnitId: _testBannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
+      final ad = BannerAd(
+        adUnitId: _testBannerAdUnitId,
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            if (!mounted) {
+              ad.dispose();
+              return;
+            }
+            setState(() => _isLoaded = true);
+            debugPrint('Google test banner loaded successfully.');
+          },
+          onAdFailedToLoad: (ad, error) {
+            debugPrint('Google test banner failed to load: $error');
             ad.dispose();
-            return;
-          }
-          setState(() => _isLoaded = true);
-          debugPrint('Google test banner loaded successfully.');
-        },
-        onAdFailedToLoad: (ad, error) {
-          debugPrint('Google test banner failed to load: $error');
-          ad.dispose();
-          if (mounted) {
-            setState(() {
-              _bannerAd = null;
-              _isLoaded = false;
-            });
-          }
-        },
-      ),
-    );
+            if (mounted) {
+              setState(() {
+                _bannerAd = null;
+                _isLoaded = false;
+              });
+            }
+          },
+        ),
+      );
 
-    _bannerAd = ad;
-    try {
-      ad.load();
-    } catch (error) {
-      debugPrint('Google test banner could not start loading: $error');
-      ad.dispose();
+      _bannerAd = ad;
+      await ad.load();
+    } catch (error, stackTrace) {
+      debugPrint('Optional banner initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _bannerAd?.dispose();
+      _bannerAd = null;
       if (mounted) {
-        setState(() {
-          _bannerAd = null;
-          _isLoaded = false;
-        });
+        setState(() => _isLoaded = false);
       }
     }
   }
@@ -1090,15 +1079,10 @@ class _TestBannerAdState extends State<TestBannerAd> {
     final ad = _bannerAd;
     if (!_isLoaded || ad == null) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Center(
-        child: SizedBox(
-          width: ad.size.width.toDouble(),
-          height: ad.size.height.toDouble(),
-          child: AdWidget(ad: ad),
-        ),
-      ),
+    return SizedBox(
+      width: ad.size.width.toDouble(),
+      height: ad.size.height.toDouble(),
+      child: Center(child: AdWidget(ad: ad)),
     );
   }
 }
@@ -1324,9 +1308,6 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 14),
-        const TestBannerAd(),
-        const SizedBox(height: 12),
       ],
     );
   }
