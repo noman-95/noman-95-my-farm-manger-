@@ -18,7 +18,10 @@ const bg = Color(0xFFF4F7F5);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Ads are temporarily disabled while isolating the startup crash.
+
+  // Permanent AdMob initialization
+  await MobileAds.instance.initialize();
+
   runApp(const FarmManagerApp());
 }
 
@@ -1004,13 +1007,14 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
 
+  // Google official Test Banner Ad Unit ID (safe, no crash)
   static const String _bannerAdUnitId =
-      'ca-app-pub-5700287934760796/3704831232';
+      'ca-app-pub-3940256099942544/6300978111';
 
   @override
   void initState() {
     super.initState();
-    // Temporarily disabled to isolate startup issues. Re-enable after testing.
+    _loadBanner();
   }
 
   void _loadBanner() {
@@ -1031,12 +1035,13 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isLoaded = false;
-          });
           debugPrint('AdMob banner failed to load: $error');
+          if (mounted) {
+            setState(() {
+              _bannerAd = null;
+              _isLoaded = false;
+            });
+          }
         },
       ),
     );
@@ -1052,20 +1057,9 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    // Ads are temporarily hidden during crash diagnosis.
-    return const SizedBox.shrink();
-
     final banner = _bannerAd;
     if (!_isLoaded || banner == null) {
-      return const SizedBox(
-        height: 32,
-        child: Center(
-          child: Text(
-            'Ad loading...',
-            style: TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-        ),
-      );
+      return const SizedBox(height: 50);
     }
 
     return SafeArea(
@@ -1073,9 +1067,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
       child: SizedBox(
         width: banner.size.width.toDouble(),
         height: banner.size.height.toDouble(),
-        child: Center(
-          child: AdWidget(ad: banner),
-        ),
+        child: AdWidget(ad: banner),
       ),
     );
   }
