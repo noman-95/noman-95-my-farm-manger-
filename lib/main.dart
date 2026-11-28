@@ -18,7 +18,6 @@ const bg = Color(0xFFF4F7F5);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
   runApp(const FarmManagerApp());
 }
 
