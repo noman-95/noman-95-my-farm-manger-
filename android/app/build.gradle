@@ -40,10 +40,11 @@ android {
     }
 
     buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
+    release {
+        // Temporarily use debug signing so APK can open
+        signingConfig signingConfigs.debug
     }
+}
 
     lint {
         checkReleaseBuilds = false
