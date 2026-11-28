@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'report_download.dart';
 
@@ -17,6 +18,14 @@ const bg = Color(0xFFF4F7F5);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Google Mobile Ads with Google's official test app ID configured
+  // in AndroidManifest.xml. This build intentionally uses test ad units only.
+  try {
+    await MobileAds.instance.initialize();
+  } catch (error) {
+    debugPrint('Google Mobile Ads initialization failed: $error');
+  }
 
   runApp(const FarmManagerApp());
 }
@@ -991,6 +1000,84 @@ class MetricCard extends StatelessWidget {
   }
 }
 
+// Google-provided test banner. Replace the test unit ID only when switching
+// to the app's real AdMob configuration after testing is complete.
+class TestBannerAd extends StatefulWidget {
+  const TestBannerAd({super.key});
+
+  @override
+  State<TestBannerAd> createState() => _TestBannerAdState();
+}
+
+class _TestBannerAdState extends State<TestBannerAd> {
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+
+  // Google's official Android banner test ad unit ID.
+  static const String _testBannerAdUnitId =
+      'ca-app-pub-3940256099942544/9214589741';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    final ad = BannerAd(
+      adUnitId: _testBannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          setState(() => _isLoaded = true);
+          debugPrint('Google test banner loaded successfully.');
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Google test banner failed to load: $error');
+          ad.dispose();
+          if (mounted) {
+            setState(() {
+              _bannerAd = null;
+              _isLoaded = false;
+            });
+          }
+        },
+      ),
+    );
+
+    _bannerAd = ad;
+    ad.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ad = _bannerAd;
+    if (!_isLoaded || ad == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: SizedBox(
+          width: ad.size.width.toDouble(),
+          height: ad.size.height.toDouble(),
+          child: AdWidget(ad: ad),
+        ),
+      ),
+    );
+  }
+}
+
 class DashboardPage extends StatelessWidget {
   final List<Animal> animals;
   final List<FinanceRecord> finance;
@@ -1211,6 +1298,10 @@ class DashboardPage extends StatelessWidget {
             ],
           ),
         ),
+
+        const SizedBox(height: 14),
+        const TestBannerAd(),
+        const SizedBox(height: 12),
       ],
     );
   }
