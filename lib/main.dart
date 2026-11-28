@@ -680,10 +680,11 @@ class _FarmShellState extends State<FarmShell> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SafeArea(
-            top: false,
-            child: TestBannerAd(),
-          ),
+          if (index == 0)
+            const SafeArea(
+              top: false,
+              child: TestBannerAd(),
+            ),
           NavigationBar(
         height: 72,
         selectedIndex: index,
