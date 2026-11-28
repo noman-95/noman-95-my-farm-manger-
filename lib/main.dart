@@ -16,13 +16,30 @@ const green = Color(0xFF167A4A);
 const darkGreen = Color(0xFF0B4D31);
 const bg = Color(0xFFF4F7F5);
 
+// AdMob is optional: the farm app must start and remain usable offline.
+bool _adsReady = false;
+late final Future<void> _adsInitialization;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Permanent AdMob initialization
-  await MobileAds.instance.initialize();
-
+  // Start AdMob in the background. Never block the first app frame on ads.
+  _adsInitialization = _initializeAdsSafely();
   runApp(const FarmManagerApp());
+}
+
+Future<void> _initializeAdsSafely() async {
+  try {
+    await MobileAds.instance
+        .initialize()
+        .timeout(const Duration(seconds: 8));
+    _adsReady = true;
+    debugPrint('AdMob initialized successfully.');
+  } catch (error, stackTrace) {
+    _adsReady = false;
+    debugPrint('AdMob unavailable; continuing without ads: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 T? _safeDecode<T>(String raw, T Function(Map<String, dynamic>) parser) {
@@ -1017,7 +1034,11 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
     _loadBanner();
   }
 
-  void _loadBanner() {
+  Future<void> _loadBanner() async {
+    // Wait for the optional SDK initialization, not the app startup.
+    await _adsInitialization;
+    if (!mounted || !_adsReady) return;
+
     final banner = BannerAd(
       adUnitId: _bannerAdUnitId,
       size: AdSize.banner,
@@ -1046,7 +1067,13 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
       ),
     );
 
-    banner.load();
+    try {
+      await banner.load();
+    } catch (error, stackTrace) {
+      banner.dispose();
+      debugPrint('AdMob banner request skipped: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   @override
@@ -1059,7 +1086,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   Widget build(BuildContext context) {
     final banner = _bannerAd;
     if (!_isLoaded || banner == null) {
-      return const SizedBox(height: 50);
+      return const SizedBox.shrink();
     }
 
     return SafeArea(
