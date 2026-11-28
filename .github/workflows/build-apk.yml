@@ -57,8 +57,23 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build signed release APK
-        run: flutter build apk --release --stacktrace --info
+      - name: Build signed release APK with Gradle
+        run: |
+          cd android
+          ./gradlew --no-daemon --stacktrace --info :app:assembleRelease
+
+      - name: Prepare release APK
+        run: |
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "ERROR: Release APK not found!"
+            find android/app/build/outputs -type f -name "*.apk"
+            exit 1
+          fi
+
+          mkdir -p build/app/outputs/flutter-apk
+          cp "$APK_PATH" build/app/outputs/flutter-apk/app-release.apk
 
       - name: Verify release APK
         run: |
