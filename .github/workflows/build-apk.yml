@@ -58,7 +58,7 @@ jobs:
         run: flutter pub get
 
       - name: Build signed release APK
-        run: flutter build apk --release --verbose
+        run: flutter build apk --release --stacktrace --info
 
       - name: Verify release APK
         run: |
