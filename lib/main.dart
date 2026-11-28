@@ -16,18 +16,23 @@ const green = Color(0xFF167A4A);
 const darkGreen = Color(0xFF0B4D31);
 const bg = Color(0xFFF4F7F5);
 
+// Ads initialization is deliberately kept separate from app startup.
+// If the ad SDK is unavailable or slow, the farm app still opens normally.
+Future<void>? _adsInitialization;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(const FarmManagerApp());
+  _adsInitialization = _initializeAdsSafely();
+}
 
-  // Initialize Google Mobile Ads with Google's official test app ID configured
-  // in AndroidManifest.xml. This build intentionally uses test ad units only.
+Future<void> _initializeAdsSafely() async {
   try {
     await MobileAds.instance.initialize();
+    debugPrint('Google Mobile Ads initialized.');
   } catch (error) {
     debugPrint('Google Mobile Ads initialization failed: $error');
   }
-
-  runApp(const FarmManagerApp());
 }
 
 T? _safeDecode<T>(String raw, T Function(Map<String, dynamic>) parser) {
@@ -1023,7 +1028,16 @@ class _TestBannerAdState extends State<TestBannerAd> {
     _loadBannerAd();
   }
 
-  void _loadBannerAd() {
+  Future<void> _loadBannerAd() async {
+    // Never let banner loading block the app or run before SDK initialization.
+    try {
+      await _adsInitialization;
+    } catch (error) {
+      debugPrint('Skipping banner because ads are unavailable: $error');
+      return;
+    }
+    if (!mounted) return;
+
     final ad = BannerAd(
       adUnitId: _testBannerAdUnitId,
       size: AdSize.banner,
@@ -1051,7 +1065,18 @@ class _TestBannerAdState extends State<TestBannerAd> {
     );
 
     _bannerAd = ad;
-    ad.load();
+    try {
+      ad.load();
+    } catch (error) {
+      debugPrint('Google test banner could not start loading: $error');
+      ad.dispose();
+      if (mounted) {
+        setState(() {
+          _bannerAd = null;
+          _isLoaded = false;
+        });
+      }
+    }
   }
 
   @override
