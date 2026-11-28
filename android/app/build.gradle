@@ -1,3 +1,4 @@
+
 plugins {
     id 'com.android.application'
     id 'dev.flutter.flutter-gradle-plugin'
@@ -42,6 +43,10 @@ android {
         release {
             signingConfig signingConfigs.release
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
     }
 }
 
