@@ -29,7 +29,9 @@ android {
 
     signingConfigs {
         release {
-            storeFile keystoreProperties.getProperty('storeFile') ? file(keystoreProperties.getProperty('storeFile')) : null
+            storeFile keystoreProperties.getProperty('storeFile') ?
+                file(keystoreProperties.getProperty('storeFile')) : null
+
             storePassword keystoreProperties.getProperty('storePassword', '')
             keyAlias keystoreProperties.getProperty('keyAlias', '')
             keyPassword keystoreProperties.getProperty('keyPassword', '')
