@@ -25,6 +25,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.50.0'
           cache: true
 
       - name: Restore Android signing key
@@ -48,32 +49,20 @@ jobs:
           storeFile=../upload-keystore.jks
           EOF
 
+      - name: Show Flutter and Dart versions
+        run: |
+          flutter --version
+          dart --version
+
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build release APK with Gradle
+      - name: Build signed release APK
+        run: flutter build apk --release --verbose
+
+      - name: Verify release APK
         run: |
-          cd android
-          ./gradlew --no-daemon --stacktrace :app:assembleRelease
-
-      - name: Find and prepare APK
-        run: |
-          echo "Searching for release APK..."
-
-          APK_PATH=$(find android/app/build/outputs -type f -name "*.apk" | grep "/release/" | head -n 1)
-
-          if [ -z "$APK_PATH" ]; then
-            echo "ERROR: Release APK was not generated."
-            find android/app/build/outputs -type f -print
-            exit 1
-          fi
-
-          echo "Found APK: $APK_PATH"
-
-          mkdir -p build/app/outputs/flutter-apk
-
-          cp "$APK_PATH" build/app/outputs/flutter-apk/app-release.apk
-
+          test -f build/app/outputs/flutter-apk/app-release.apk
           ls -lh build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload signed APK
