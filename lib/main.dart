@@ -18,6 +18,15 @@ const bg = Color(0xFFF4F7F5);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Google Mobile Ads before any BannerAd is created.
+  // If the ads SDK is unavailable, the app should still be able to start.
+  try {
+    await MobileAds.instance.initialize();
+  } catch (error) {
+    debugPrint('AdMob initialization failed: $error');
+  }
+
   runApp(const FarmManagerApp());
 }
 
