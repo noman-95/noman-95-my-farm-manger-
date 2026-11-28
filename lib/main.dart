@@ -18,16 +18,19 @@ const bg = Color(0xFFF4F7F5);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Google Mobile Ads before any BannerAd is created.
-  // If the ads SDK is unavailable, the app should still be able to start.
-  try {
-    await MobileAds.instance.initialize();
-  } catch (error) {
-    debugPrint('AdMob initialization failed: $error');
-  }
-
+  // Ads are temporarily disabled while isolating the startup crash.
   runApp(const FarmManagerApp());
+}
+
+T? _safeDecode<T>(String raw, T Function(Map<String, dynamic>) parser) {
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) return null;
+    return parser(decoded);
+  } catch (error) {
+    debugPrint('Skipping invalid saved record: $error');
+    return null;
+  }
 }
 
 String fmtDate(DateTime d) =>
@@ -451,45 +454,57 @@ class _FarmShellState extends State<FarmShell> {
   }
 
   Future<void> _load() async {
-    final p = await SharedPreferences.getInstance();
+    try {
+      final p = await SharedPreferences.getInstance();
 
-    final rawAnimals =
-        p.getStringList('animals_v5') ??
-        p.getStringList('animals_v4') ??
-        [];
+      final rawAnimals = p.getStringList('animals_v5') ??
+          p.getStringList('animals_v4') ?? [];
+      final rawFinance = p.getStringList('finance_v5') ??
+          p.getStringList('finance_v4') ?? [];
+      final rawHealth = p.getStringList('health_v1') ?? [];
+      final rawSpecial = p.getStringList('special_expenses_v1') ?? [];
+      final rawMilk = p.getStringList('milk_v1') ?? [];
 
-    final rawFinance =
-        p.getStringList('finance_v5') ??
-        p.getStringList('finance_v4') ??
-        [];
+      final loadedAnimals = rawAnimals
+          .map((x) => _safeDecode<Animal>(x, Animal.fromJson))
+          .whereType<Animal>().toList();
+      final loadedFinance = rawFinance
+          .map((x) => _safeDecode<FinanceRecord>(x, FinanceRecord.fromJson))
+          .whereType<FinanceRecord>().toList();
+      final loadedHealth = rawHealth
+          .map((x) => _safeDecode<HealthRecord>(x, HealthRecord.fromJson))
+          .whereType<HealthRecord>().toList();
+      final loadedSpecial = rawSpecial
+          .map((x) => _safeDecode<SpecialExpense>(x, SpecialExpense.fromJson))
+          .whereType<SpecialExpense>().toList();
+      final loadedMilk = rawMilk
+          .map((x) => _safeDecode<MilkRecord>(x, MilkRecord.fromJson))
+          .whereType<MilkRecord>().toList();
 
-    final rawHealth = p.getStringList('health_v1') ?? [];
-    final rawSpecial = p.getStringList('special_expenses_v1') ?? [];
-    final rawMilk = p.getStringList('milk_v1') ?? [];
-
-    setState(() {
-      farmName = p.getString('farm_name_v5') ?? 'My Farm Manager';
-
-      animals = rawAnimals
-          .map((x) => Animal.fromJson(jsonDecode(x)))
-          .toList();
-
-      finance = rawFinance
-          .map((x) => FinanceRecord.fromJson(jsonDecode(x)))
-          .toList();
-
-      health = rawHealth
-          .map((x) => HealthRecord.fromJson(jsonDecode(x)))
-          .toList();
-      specialExpenses = rawSpecial
-          .map((x) => SpecialExpense.fromJson(jsonDecode(x)))
-          .toList();
-      milkRecords = rawMilk
-          .map((x) => MilkRecord.fromJson(jsonDecode(x)))
-          .toList();
-
-      loading = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        farmName = p.getString('farm_name_v5') ?? 'My Farm Manager';
+        animals = loadedAnimals;
+        finance = loadedFinance;
+        health = loadedHealth;
+        specialExpenses = loadedSpecial;
+        milkRecords = loadedMilk;
+        loading = false;
+      });
+    } catch (error, stackTrace) {
+      debugPrint('Farm Manager startup data load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() {
+        // Continue with an empty local database rather than closing the app.
+        animals = [];
+        finance = [];
+        health = [];
+        specialExpenses = [];
+        milkRecords = [];
+        loading = false;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -995,7 +1010,7 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
   @override
   void initState() {
     super.initState();
-    _loadBanner();
+    // Temporarily disabled to isolate startup issues. Re-enable after testing.
   }
 
   void _loadBanner() {
@@ -1037,6 +1052,9 @@ class _FarmBannerAdState extends State<_FarmBannerAd> {
 
   @override
   Widget build(BuildContext context) {
+    // Ads are temporarily hidden during crash diagnosis.
+    return const SizedBox.shrink();
+
     final banner = _bannerAd;
     if (!_isLoaded || banner == null) {
       return const SizedBox(
