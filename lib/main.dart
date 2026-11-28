@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart' as flutter;
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -16,30 +15,10 @@ const green = Color(0xFF167A4A);
 const darkGreen = Color(0xFF0B4D31);
 const bg = Color(0xFFF4F7F5);
 
-// AdMob is optional: the farm app must start and remain usable offline.
-bool _adsReady = false;
-late final Future<void> _adsInitialization;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Start AdMob in the background. Never block the first app frame on ads.
-  _adsInitialization = _initializeAdsSafely();
   runApp(const FarmManagerApp());
-}
-
-Future<void> _initializeAdsSafely() async {
-  try {
-    await MobileAds.instance
-        .initialize()
-        .timeout(const Duration(seconds: 8));
-    _adsReady = true;
-    debugPrint('AdMob initialized successfully.');
-  } catch (error, stackTrace) {
-    _adsReady = false;
-    debugPrint('AdMob unavailable; continuing without ads: $error');
-    debugPrintStack(stackTrace: stackTrace);
-  }
 }
 
 T? _safeDecode<T>(String raw, T Function(Map<String, dynamic>) parser) {
@@ -694,7 +673,6 @@ class _FarmShellState extends State<FarmShell> {
               children: pages,
             ),
           ),
-          if (index == 0) const _FarmBannerAd(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -1008,93 +986,6 @@ class MetricCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FarmBannerAd extends StatefulWidget {
-  const _FarmBannerAd({super.key});
-
-  @override
-  State<_FarmBannerAd> createState() => _FarmBannerAdState();
-}
-
-class _FarmBannerAdState extends State<_FarmBannerAd> {
-  BannerAd? _bannerAd;
-  bool _isLoaded = false;
-
-  // Google official Test Banner Ad Unit ID (safe, no crash)
-  static const String _bannerAdUnitId =
-      'ca-app-pub-3940256099942544/6300978111';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBanner();
-  }
-
-  Future<void> _loadBanner() async {
-    // Wait for the optional SDK initialization, not the app startup.
-    await _adsInitialization;
-    if (!mounted || !_adsReady) return;
-
-    final banner = BannerAd(
-      adUnitId: _bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          debugPrint('AdMob banner failed to load: $error');
-          if (mounted) {
-            setState(() {
-              _bannerAd = null;
-              _isLoaded = false;
-            });
-          }
-        },
-      ),
-    );
-
-    try {
-      await banner.load();
-    } catch (error, stackTrace) {
-      banner.dispose();
-      debugPrint('AdMob banner request skipped: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final banner = _bannerAd;
-    if (!_isLoaded || banner == null) {
-      return const SizedBox.shrink();
-    }
-
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        width: banner.size.width.toDouble(),
-        height: banner.size.height.toDouble(),
-        child: AdWidget(ad: banner),
       ),
     );
   }
