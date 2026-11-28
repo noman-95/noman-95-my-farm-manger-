@@ -42,58 +42,29 @@ jobs:
 
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
 
-          cat > android/key.properties <<EOF
+          cat > android/key.properties <<EOF_KEY
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$ANDROID_KEY_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
           storeFile=../upload-keystore.jks
-          EOF
+          EOF_KEY
 
       - name: Show Flutter and Dart versions
         run: |
           flutter --version
           dart --version
 
-      - name: Install Flutter dependencies
+      - name: Resolve Flutter dependencies and regenerate Android plugins
         run: flutter pub get
 
-      
-      - name: Build signed release APK with Gradle
+      - name: Build release APK using Flutter
+        run: flutter build apk --release --no-pub
+
+      - name: Verify APK
         run: |
-          cd android
-          ./gradlew --no-daemon --stacktrace --info :app:assembleRelease
-
-      - name: Upload Android Lint Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-lint-reports
-          path: |
-            **/build/reports/lint-results-*.html
-            **/build/reports/lint-results-*.txt
-            **/build/reports/lint-results-*.xml
-            **/build/reports/problems/problems-report.html
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Prepare release APK
-        run: |
-          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
-
-          if [ ! -f "$APK_PATH" ]; then
-            echo "ERROR: Release APK not found!"
-            find android/app/build/outputs -type f -name "*.apk"
-            exit 1
-          fi
-
-          mkdir -p build/app/outputs/flutter-apk
-          cp "$APK_PATH" build/app/outputs/flutter-apk/app-release.apk
-
-
-      - name: Verify release APK
-        run: |
-          test -f build/app/outputs/flutter-apk/app-release.apk
-          ls -lh build/app/outputs/flutter-apk/app-release.apk
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          test -f "$APK_PATH"
+          ls -lh "$APK_PATH"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
